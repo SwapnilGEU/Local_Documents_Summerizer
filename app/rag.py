@@ -1,0 +1,96 @@
+from config import TOP_K_FINAL, TOP_K_HYBRID
+from retrieval import hybrid_search
+from llm import local_llm
+from reranker import rerank
+
+def build_context(docs):
+    parts = []
+
+    for doc in docs:
+        meta = doc.metadata
+        source = (
+            f"[{meta.get('heading_path', 'Unknown section')}, "
+            f"p.{meta.get('page', '?')}]"
+        )
+        parts.append(f"{source}\n{doc.page_content}")
+
+    return "\n\n".join(parts)
+
+
+def build_prompt(context, question):
+    return f"""<|system|>
+You are a helpful question-answering assistant for machine learning.
+
+Answer the question using ONLY the supplied context.
+
+Give a clear and sufficiently detailed answer. Use multiple sentences
+when the context provides useful supporting information.
+
+Do not add information that is not supported by the context.
+
+Cite the relevant source tag at the end of the answer when appropriate.
+
+If the answer is not present in the context, say:
+"I don't know based on the provided context."
+
+<|user|>
+Context:
+{context}
+
+Question:
+{question}
+
+<|assistant|>
+"""
+def extract_response_text(response):
+    content = response.content
+
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        texts = []
+
+        for block in content:
+            if isinstance(block, dict) and "text" in block:
+                texts.append(block["text"])
+
+        return "".join(texts).strip()
+
+    return str(content).strip()
+
+
+def rag(query):
+    hybrid_docs = hybrid_search(
+        query,
+        k=TOP_K_HYBRID,
+        fetch_k=20,
+    )
+
+    final_docs = rerank(
+        query,
+        hybrid_docs,
+        top_k=TOP_K_FINAL,
+    )
+
+    context = build_context(final_docs)
+    prompt_text = build_prompt(context, query)
+
+    response = local_llm.invoke(prompt_text)
+    answer = extract_response_text(response)
+
+    return answer, final_docs
+
+question = "What is machine learning?"
+
+answer, sources = rag(question)
+
+print("QUESTION:")
+print(question)
+
+print("\nANSWER:")
+print(answer)
+
+print("\nSOURCES:")
+for i, doc in enumerate(sources, 1):
+    print(f"{i}. {doc.metadata}")
