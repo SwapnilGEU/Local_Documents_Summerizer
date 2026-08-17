@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import csv
+import io
 
 
 # ==========================================
@@ -27,6 +29,91 @@ API_URL = "http://127.0.0.1:8000/query"
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "export_data" not in st.session_state:
+    st.session_state.export_data = None
+
+
+# ==========================================
+# FUNCTION: CREATE CHAT EXPORT
+# ==========================================
+
+def create_chat_export(messages):
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    # CSV header
+    writer.writerow([
+        "Question",
+        "Retrieved Sources"
+    ])
+
+    current_question = None
+
+    for message in messages:
+
+        # Store user question
+        if message["role"] == "user":
+
+            current_question = message["content"]
+
+        # Store sources associated with assistant response
+        elif message["role"] == "assistant":
+
+            sources = message.get("sources", [])
+
+            source_text = ""
+
+            if sources:
+
+                source_list = []
+
+                for source in sources:
+
+                    if isinstance(source, dict):
+
+                        # Try to extract useful information
+                        source_info = []
+
+                        if "source" in source:
+                            source_info.append(
+                                f"File: {source['source']}"
+                            )
+
+                        if "page" in source:
+                            source_info.append(
+                                f"Page: {source['page']}"
+                            )
+
+                        if "content" in source:
+                            source_info.append(
+                                source["content"]
+                            )
+
+                        if source_info:
+                            source_list.append(
+                                " | ".join(source_info)
+                            )
+                        else:
+                            source_list.append(
+                                str(source)
+                            )
+
+                    else:
+                        source_list.append(str(source))
+
+                source_text = "\n\n".join(source_list)
+
+            writer.writerow([
+                current_question or "",
+                source_text
+            ])
+
+            current_question = None
+
+    return output.getvalue()
+
 
 # ==========================================
 # SIDEBAR
@@ -43,15 +130,60 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🧹 Clear Chat", use_container_width=True):
+    # --------------------------------------
+    # CLEAR CHAT
+    # --------------------------------------
 
+    if st.button(
+        "🧹 Clear Chat",
+        use_container_width=True
+    ):
+
+        # Create export BEFORE clearing messages
+        if st.session_state.messages:
+
+            st.session_state.export_data = (
+                create_chat_export(
+                    st.session_state.messages
+                )
+            )
+
+        # Clear chat
         st.session_state.messages = []
 
         st.rerun()
 
     st.divider()
 
+    # --------------------------------------
+    # DOWNLOAD EXPORT
+    # --------------------------------------
+
+    if st.session_state.export_data:
+
+        st.subheader("📥 Chat Export")
+
+        st.download_button(
+            label="Download Chat CSV",
+            data=st.session_state.export_data,
+            file_name="rag_chat_export.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+        if st.button(
+            "✖ Remove Export",
+            use_container_width=True
+        ):
+
+            st.session_state.export_data = None
+
+            st.rerun()
+
+    st.divider()
+
     st.caption("Backend")
+
     st.code(API_URL)
 
 
@@ -76,13 +208,18 @@ for message in st.session_state.messages:
 
         st.markdown(message["content"])
 
-        # Display sources if available
+        # ----------------------------------
+        # Display sources
+        # ----------------------------------
+
         if (
             message["role"] == "assistant"
             and message.get("sources")
         ):
 
-            with st.expander("📚 Retrieved Sources"):
+            with st.expander(
+                "📚 Retrieved Sources"
+            ):
 
                 for i, source in enumerate(
                     message["sources"],
@@ -95,26 +232,32 @@ for message in st.session_state.messages:
 
                     if isinstance(source, dict):
 
-                        # Display useful metadata
                         if "source" in source:
+
                             st.write(
-                                f"**File:** {source['source']}"
+                                f"**File:** "
+                                f"{source['source']}"
                             )
 
                         if "page" in source:
+
                             st.write(
-                                f"**Page:** {source['page']}"
+                                f"**Page:** "
+                                f"{source['page']}"
                             )
 
                         if "content" in source:
+
                             st.write(
                                 source["content"]
                             )
 
                         else:
+
                             st.json(source)
 
                     else:
+
                         st.write(source)
 
                     st.divider()
@@ -136,7 +279,7 @@ question = st.chat_input(
 if question:
 
     # --------------------------------------
-    # Display user message immediately
+    # Display user message
     # --------------------------------------
 
     with st.chat_message("user"):
@@ -151,7 +294,6 @@ if question:
         }
     )
 
-
     # --------------------------------------
     # Call FastAPI
     # --------------------------------------
@@ -159,7 +301,7 @@ if question:
     with st.chat_message("assistant"):
 
         with st.spinner(
-            "🔎 Retrieving documents and generating answer..."
+            "🔎 Retrieving information and generating answer..."
         ):
 
             try:
@@ -175,7 +317,6 @@ if question:
                 response.raise_for_status()
 
                 result = response.json()
-
 
                 # ==================================
                 # EXTRACT ANSWER
@@ -199,7 +340,6 @@ if question:
 
                     answer = str(result)
 
-
                 # ==================================
                 # EXTRACT SOURCES
                 # ==================================
@@ -208,7 +348,6 @@ if question:
 
                 if isinstance(result, dict):
 
-                    # Possible source keys
                     if "sources" in result:
 
                         sources = result["sources"]
@@ -221,13 +360,11 @@ if question:
 
                         sources = result["documents"]
 
-
                 # ==================================
                 # DISPLAY ANSWER
                 # ==================================
 
                 st.markdown(answer)
-
 
                 # ==================================
                 # DISPLAY SOURCES
@@ -283,7 +420,6 @@ if question:
 
                             st.divider()
 
-
                 # ==================================
                 # SAVE ASSISTANT MESSAGE
                 # ==================================
@@ -295,7 +431,6 @@ if question:
                         "sources": sources
                     }
                 )
-
 
             # ==================================
             # ERROR HANDLING
@@ -318,12 +453,10 @@ if question:
                     }
                 )
 
-
             except requests.exceptions.Timeout:
 
                 error_message = (
-                    "⏱️ The request timed out. "
-                    "The RAG pipeline took too long to respond."
+                    "⏱️ The request timed out."
                 )
 
                 st.error(error_message)
@@ -336,22 +469,17 @@ if question:
                     }
                 )
 
-
             except requests.exceptions.HTTPError as e:
 
                 error_message = (
-                    f"❌ FastAPI returned an HTTP error: {e}"
+                    f"❌ FastAPI HTTP error: {e}"
                 )
 
                 st.error(error_message)
 
-                # Show backend error
                 try:
-
                     st.json(response.json())
-
                 except Exception:
-
                     st.write(response.text)
 
                 st.session_state.messages.append(
@@ -361,7 +489,6 @@ if question:
                         "sources": []
                     }
                 )
-
 
             except Exception as e:
 
