@@ -1,5 +1,13 @@
-from app.rag import rag
-eval_set = [
+import sys
+from pathlib import Path
+
+# Make `app/` importable both as a package (evaluation/*) and internally
+# (app/*.py use bare imports like `from config import ...`).
+APP_DIR = Path(__file__).resolve().parent.parent / "app"
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
+
+EVAL_SET = [
     {
         "question": "What is machine learning?",
         "reference": (
@@ -38,16 +46,41 @@ eval_set = [
     },
 ]
 
-eval_rows = []
 
-for item in eval_set:
-    answer, sources = rag(item["question"])
+def build_eval_rows(eval_set=EVAL_SET, verbose=True):
+    """
+    Runs the RAG pipeline over each eval question and builds eval rows.
+    This is the expensive part (one LLM call per question) - it's a
+    function now, not import-time code, so importing this module is free.
+    """
+    from app.rag import rag  # imported lazily so a plain `import eval_set` is cheap
 
-    eval_rows.append({
-        "user_input": item["question"],
-        "response": answer,
-        "retrieved_contexts": [doc.page_content for doc in sources],
-        "reference": item["reference"],
-    })
+    rows = []
 
-print(f"Evaluation samples: {len(eval_rows)}")
+    for item in eval_set:
+        if verbose:
+            print(f"Running RAG for: {item['question']}")
+
+        try:
+            answer, sources = rag(item["question"])
+        except Exception as e:
+            print(f"  Skipped (RAG call failed: {e})")
+            continue
+
+        rows.append({
+            "user_input": item["question"],
+            "response": answer,
+            "retrieved_contexts": [doc.page_content for doc in sources],
+            "reference": item["reference"],
+        })
+
+    if verbose:
+        print(f"Evaluation samples: {len(rows)}")
+
+    return rows
+
+
+if __name__ == "__main__":
+    eval_rows = build_eval_rows()
+    for row in eval_rows:
+        print(f"\nQ: {row['user_input']}\nA: {row['response'][:200]}")

@@ -17,7 +17,13 @@ def rerank(query, docs, top_k=TOP_K_FINAL):
 
     return [doc for _, doc in ranked[:top_k]]
 
-query = "What is machine learning?"
 
-hybrid_docs = hybrid_search(query, k=TOP_K_HYBRID)
-final_docs = rerank(query, hybrid_docs, top_k=TOP_K_FINAL)
+if __name__ == "__main__":
+    query = "What is machine learning?"
+
+    hybrid_docs = hybrid_search(query, k=TOP_K_HYBRID)
+    final_docs = rerank(query, hybrid_docs, top_k=TOP_K_FINAL)
+
+    '''for i, doc in enumerate(final_docs, 1):
+        print(f"\n--- Reranked result {i} ---")
+        print(doc.page_content[:350])'''

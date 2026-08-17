@@ -81,16 +81,18 @@ def rag(query):
 
     return answer, final_docs
 
-question = "What is machine learning?"
 
-answer, sources = rag(question)
+if __name__ == "__main__":
+    question = "What is machine learning?"
 
-print("QUESTION:")
-print(question)
+    answer, sources = rag(question)
 
-print("\nANSWER:")
-print(answer)
+    print("QUESTION:")
+    print(question)
 
-print("\nSOURCES:")
-for i, doc in enumerate(sources, 1):
-    print(f"{i}. {doc.metadata}")
+    print("\nANSWER:")
+    print(answer)
+
+    print("\nSOURCES:")
+    for i, doc in enumerate(sources, 1):
+        print(f"{i}. {doc.metadata}")

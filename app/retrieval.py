@@ -6,9 +6,6 @@ retriever = vectorstore.as_retriever(
     search_kwargs={"k": TOP_K_HYBRID},
 )
 
-query = "What is machine learning?"
-dense_docs = retriever.invoke(query)
-
 from rank_bm25 import BM25Okapi
 
 tokenized_docs = [
@@ -50,8 +47,10 @@ def hybrid_search(query, k=TOP_K_HYBRID, fetch_k=20):
 
     return [doc_lookup[doc_id] for doc_id in ranked_ids]
 
-results = hybrid_search("What is machine learning?", k=5)
 
-for i, doc in enumerate(results, 1):
-    print(f"\n--- Hybrid result {i} ---")
-    print(doc.page_content[:350])
+if __name__ == "__main__":
+    results = hybrid_search("What is machine learning?", k=5)
+
+    for i, doc in enumerate(results, 1):
+        print(f"\n--- Hybrid result {i} ---")
+        print(doc.page_content[:350])
