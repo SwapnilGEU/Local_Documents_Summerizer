@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import csv
 import io
-
-
+import time
+import os
 # ==========================================
 # PAGE CONFIGURATION
 # ==========================================
@@ -19,8 +19,10 @@ st.set_page_config(
 # FASTAPI CONFIGURATION
 # ==========================================
 
-API_URL = "http://127.0.0.1:8000/query"
-
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000/query"
+)
 
 # ==========================================
 # SESSION STATE
@@ -306,6 +308,7 @@ if question:
 
             try:
 
+                start_time = time.time()
                 response = requests.post(
                     API_URL,
                     json={
@@ -313,7 +316,8 @@ if question:
                     },
                     timeout=120
                 )
-
+                request_time = time.time() - start_time
+                print(f"Request time: {request_time:.2f} seconds")
                 response.raise_for_status()
 
                 result = response.json()

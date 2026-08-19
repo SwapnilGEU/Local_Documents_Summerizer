@@ -1,0 +1,23 @@
+services:
+
+  fastapi:
+    build: .
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+  streamlit:
+    build: .
+    container_name: rag-ui
+    ports:
+      - "8501:8501"
+    depends_on:
+      - fastapi
+    environment:
+      API_URL: http://fastapi:8000/query
+    command: >
+      streamlit run streamlit_app.py
+      --server.address=0.0.0.0
+      --server.port=8501

@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+__pycache__
+*.pyc
+
+notebooks/
+evaluation/
+
+.env
+
+*.ipynb

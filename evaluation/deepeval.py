@@ -15,8 +15,8 @@ from deepeval.metrics import (
     ContextualRecallMetric,
 )
 
-from config import LOCAL_MODEL, OLLAMA_BASE_URL
-from llm import check_ollama_connection
+from app.config import LOCAL_MODEL, OLLAMA_BASE_URL
+from app.llm import check_ollama_connection
 from eval_set import build_eval_rows
 
 RESULTS_PATH = Path(__file__).resolve().parent / "eval_results.csv"
