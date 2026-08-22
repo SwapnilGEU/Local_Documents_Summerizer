@@ -1,7 +1,11 @@
+import time
+
 from config import TOP_K_FINAL, TOP_K_HYBRID
 from retrieval import hybrid_search
 from llm import local_llm
 from reranker import rerank
+from logging_utils import log_event
+
 
 def build_context(docs):
     parts = []
@@ -42,6 +46,8 @@ Question:
 
 <|assistant|>
 """
+
+
 def extract_response_text(response):
     content = response.content
 
@@ -60,39 +66,80 @@ def extract_response_text(response):
     return str(content).strip()
 
 
-def rag(query):
+def rag(query, request_id=None):
+    request_id = request_id or "local"
+    total_start = time.perf_counter()
+
+    log_event(
+        "rag_started",
+        request_id=request_id,
+        query_length=len(query),
+    )
+
+    start = time.perf_counter()
     hybrid_docs = hybrid_search(
         query,
         k=TOP_K_HYBRID,
         fetch_k=20,
     )
+    retrieval_ms = (time.perf_counter() - start) * 1000
 
+    log_event(
+        "retrieval_completed",
+        request_id=request_id,
+        latency_ms=round(retrieval_ms, 2),
+        documents_retrieved=len(hybrid_docs),
+    )
+
+    start = time.perf_counter()
     final_docs = rerank(
         query,
         hybrid_docs,
         top_k=TOP_K_FINAL,
     )
+    rerank_ms = (time.perf_counter() - start) * 1000
+
+    log_event(
+        "reranking_completed",
+        request_id=request_id,
+        latency_ms=round(rerank_ms, 2),
+        documents_selected=len(final_docs),
+    )
 
     context = build_context(final_docs)
     prompt_text = build_prompt(context, query)
 
+    start = time.perf_counter()
     response = local_llm.invoke(prompt_text)
+    llm_ms = (time.perf_counter() - start) * 1000
     answer = extract_response_text(response)
+
+    log_event(
+        "llm_completed",
+        request_id=request_id,
+        latency_ms=round(llm_ms, 2),
+        context_chars=len(context),
+        prompt_chars=len(prompt_text),
+    )
+
+    total_ms = (time.perf_counter() - total_start) * 1000
+    log_event(
+        "rag_completed",
+        request_id=request_id,
+        total_latency_ms=round(total_ms, 2),
+    )
 
     return answer, final_docs
 
 
 if __name__ == "__main__":
     question = "What is machine learning?"
-
     answer, sources = rag(question)
 
     print("QUESTION:")
     print(question)
-
     print("\nANSWER:")
     print(answer)
-
     print("\nSOURCES:")
     for i, doc in enumerate(sources, 1):
         print(f"{i}. {doc.metadata}")
