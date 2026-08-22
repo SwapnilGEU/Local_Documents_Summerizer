@@ -16,6 +16,9 @@ class MetricsCollector:
         self.completion_tokens = 0
         self.total_tokens = 0
         self.tokens_per_second = []
+        self.validation_failures = 0
+        self.retry_count = 0
+        self.graceful_failures = 0
 
     def record_request(self, latency_ms, success=True):
         with self.lock:
@@ -42,6 +45,20 @@ class MetricsCollector:
             self.completion_tokens += completion_tokens
             self.total_tokens += prompt_tokens + completion_tokens
             self.tokens_per_second.append(tokens_per_second)
+
+    def record_validation_failure(self):
+        with self.lock:
+            self.validation_failures += 1
+
+
+    def record_retry(self):
+        with self.lock:
+            self.retry_count += 1
+
+
+    def record_graceful_failure(self):
+        with self.lock:
+            self.graceful_failures += 1
 
     @staticmethod
     def percentile(values, percentile):
@@ -74,6 +91,11 @@ class MetricsCollector:
                     "completion_tokens": self.completion_tokens,
                     "total_tokens": self.total_tokens,
                     "average_tokens_per_second": mean(self.tokens_per_second) if self.tokens_per_second else 0.0,
+                },
+                "llm_validation": {
+                    "validation_failures": self.validation_failures,
+                    "retry_count": self.retry_count,
+                    "graceful_failures": self.graceful_failures,
                 },
             }
 

@@ -8,6 +8,7 @@ MD_PATH = Path("data/processed/ml_book.md")
 CLEAN_PATH = Path("data/processed/clean_ml_book.md")
 CHUNKS_PATH = Path("data/processed/chunks.jsonl")
 CHROMA_PATH = "data/chroma"
+MAX_VALIDATION_RETRIES = 2
 
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"

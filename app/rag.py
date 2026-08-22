@@ -1,12 +1,14 @@
 import time
+from urllib import response
 
-from config import TOP_K_FINAL, TOP_K_HYBRID
+from config import TOP_K_FINAL, TOP_K_HYBRID,MAX_VALIDATION_RETRIES
 from retrieval import hybrid_search
 from llm import local_llm
 from reranker import rerank
 from logging_utils import log_event
 from metrics import metrics
-
+from schemas import RAGAnswer
+from pydantic import ValidationError
 
 def build_context(docs):
     parts = []
@@ -111,14 +113,86 @@ def rag(query, request_id=None):
 
     context = build_context(final_docs)
     prompt_text = build_prompt(context, query)
-
+    original_prompt = prompt_text
     start = time.perf_counter()
-    response = local_llm.invoke(prompt_text)
-    llm_ms = (time.perf_counter() - start) * 1000
-    answer = extract_response_text(response)
+    validation_attempt = 0
+    answer = None
 
+def generate_validated_answer(prompt_text, request_id=None):
+    original_prompt = prompt_text
+    total_llm_ms = 0.0
+    validation_attempt = 0
+
+    while validation_attempt <= MAX_VALIDATION_RETRIES:
+
+        llm_start = time.perf_counter()
+
+        answer, response, llm_ms, validation_attempts = (
+            generate_validated_answer(
+                prompt_text,
+                request_id=request_id,
+            )
+        )
+        total_llm_ms += llm_ms
+        try:
+            validated = RAGAnswer(answer=answer)
+
+            return (
+                validated.answer,
+                response,
+                total_llm_ms,
+                validation_attempt,
+            )
+
+        except ValidationError as exc:
+
+            metrics.record_validation_failure()
+
+            log_event(
+                "rag_validation_error",
+                request_id=request_id,
+                attempt=validation_attempt + 1,
+                error=str(exc),
+            )
+
+            validation_attempt += 1
+
+            if validation_attempt > MAX_VALIDATION_RETRIES:
+
+                metrics.record_graceful_failure()
+
+                log_event(
+                    "rag_graceful_failure",
+                    request_id=request_id,
+                    attempts=validation_attempt,
+                    reason="LLM response failed Pydantic validation",
+                )
+
+                return (
+                    "I'm sorry, but I was unable to generate a valid "
+                    "answer from the provided documents.",
+                    response,
+                    total_llm_ms,
+                    validation_attempt,
+                )
+
+            metrics.record_retry()
+
+            prompt_text = f"""
+{original_prompt}
+
+IMPORTANT:
+Your previous response failed validation.
+
+Validation error:
+{exc}
+
+Generate the answer again.
+Return a non-empty answer.
+Follow all the original instructions.
+Do not mention this validation failure.
+"""
     metrics.record_llm(llm_ms)
-
     meta = response.response_metadata
     prompt_tokens = meta.get("prompt_eval_count", 0)
     completion_tokens = meta.get("eval_count", 0)
