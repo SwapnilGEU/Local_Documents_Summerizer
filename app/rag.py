@@ -5,6 +5,7 @@ from retrieval import hybrid_search
 from llm import local_llm
 from reranker import rerank
 from logging_utils import log_event
+from metrics import metrics
 
 
 def build_context(docs):
@@ -83,6 +84,7 @@ def rag(query, request_id=None):
         fetch_k=20,
     )
     retrieval_ms = (time.perf_counter() - start) * 1000
+    metrics.record_retrieval(retrieval_ms)
 
     log_event(
         "retrieval_completed",
@@ -98,6 +100,7 @@ def rag(query, request_id=None):
         top_k=TOP_K_FINAL,
     )
     rerank_ms = (time.perf_counter() - start) * 1000
+    metrics.record_reranking(rerank_ms)
 
     log_event(
         "reranking_completed",
@@ -114,12 +117,26 @@ def rag(query, request_id=None):
     llm_ms = (time.perf_counter() - start) * 1000
     answer = extract_response_text(response)
 
+    metrics.record_llm(llm_ms)
+
+    meta = response.response_metadata
+    prompt_tokens = meta.get("prompt_eval_count", 0)
+    completion_tokens = meta.get("eval_count", 0)
+    eval_duration_s = meta.get("eval_duration", 0) / 1e9
+    tokens_per_second = (
+        completion_tokens / eval_duration_s if eval_duration_s > 0 else 0.0
+    )
+    metrics.record_tokens(prompt_tokens, completion_tokens, tokens_per_second)
+
     log_event(
         "llm_completed",
         request_id=request_id,
         latency_ms=round(llm_ms, 2),
         context_chars=len(context),
         prompt_chars=len(prompt_text),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        tokens_per_second=round(tokens_per_second, 2),
     )
 
     total_ms = (time.perf_counter() - total_start) * 1000

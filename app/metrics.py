@@ -1,6 +1,6 @@
 import threading
 from statistics import mean
-from app.metrics_logger import save_metrics
+from metrics_logger import save_metrics
 
 
 class MetricsCollector:
