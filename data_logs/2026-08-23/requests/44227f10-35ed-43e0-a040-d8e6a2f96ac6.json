@@ -1,0 +1,18 @@
+{
+  "query": "what is unsupervised learning",
+  "request_id": "44227f10-35ed-43e0-a040-d8e6a2f96ac6",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-08-23T05:02:28.608120+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 29
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-08-23T05:02:31.742828+00:00",
+      "status_code": 200
+    }
+  ]
+}

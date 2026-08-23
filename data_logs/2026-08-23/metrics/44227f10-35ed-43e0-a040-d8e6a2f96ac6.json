@@ -1,0 +1,25 @@
+{
+  "request_id": "44227f10-35ed-43e0-a040-d8e6a2f96ac6",
+  "timestamp": "2026-08-23T10:32:31.746825",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is unsupervised learning",
+    "status": "success",
+    "total_latency_ms": 3131.57
+  },
+  "rag": {
+    "total_latency_ms": 3131.03,
+    "retrieval_latency_ms": 48.91,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 238.38,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 2842.02,
+    "validation_attempts": 0,
+    "graceful_failure": false,
+    "prompt_tokens": 853,
+    "completion_tokens": 11,
+    "tokens_per_second": 47.45
+  }
+}

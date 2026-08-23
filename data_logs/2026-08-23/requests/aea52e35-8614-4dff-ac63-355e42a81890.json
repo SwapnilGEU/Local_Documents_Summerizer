@@ -1,0 +1,18 @@
+{
+  "query": "What is supervised learning",
+  "request_id": "aea52e35-8614-4dff-ac63-355e42a81890",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-08-23T05:01:44.222938+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 27
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-08-23T05:02:15.920568+00:00",
+      "status_code": 200
+    }
+  ]
+}

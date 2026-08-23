@@ -1,6 +1,6 @@
 import threading
 from statistics import mean
-from metrics_logger import save_metrics
+from metrics_logger import save_metrics, save_request_metrics
 
 
 class MetricsCollector:
@@ -50,11 +50,9 @@ class MetricsCollector:
         with self.lock:
             self.validation_failures += 1
 
-
     def record_retry(self):
         with self.lock:
             self.retry_count += 1
-
 
     def record_graceful_failure(self):
         with self.lock:
@@ -100,7 +98,22 @@ class MetricsCollector:
             }
 
     def save_snapshot(self):
+        """Append the rolling cumulative aggregate (all requests so far)."""
         save_metrics(self.summary())
+
+    def save_request_snapshot(self, request_id, request_section, rag_section, llm_section):
+        """Save ONE pretty structured JSON file for a single request, with
+        clearly separated REQUEST / RAG / LLM sections. This is what you
+        want when you want to look at "what happened on this one call"
+        instead of the running averages in summary()."""
+        save_request_metrics(
+            request_id,
+            {
+                "request": request_section,
+                "rag": rag_section,
+                "llm": llm_section,
+            },
+        )
 
 
 metrics = MetricsCollector()

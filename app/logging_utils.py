@@ -71,13 +71,27 @@ if not logger.handlers:
 # -----------------------------
 # Per-request buffering for file persistence
 #
-# Instead of writing one flat line per event, we collect every event for a
-# given request_id in memory and only write the file once, as a single
-# nested object, when the request finishes (request_completed / failed).
+# Every event for a given request_id is collected in memory. When the
+# request finishes (request_completed / request_failed) we write it out
+# TWICE:
+#
+#   1. data_logs/<date>/app.jsonl        - one compact line per request,
+#                                          good for `tail -f` / grepping.
+#   2. data_logs/<date>/requests/<id>.json - the SAME record, pretty
+#                                          printed (indent=2), one file
+#                                          per request, good for opening
+#                                          in an editor / reading by eye.
 # -----------------------------
 
 _buffer_lock = threading.Lock()
 _request_buffers = {}
+
+
+def _log_dir_for_today():
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    log_dir = os.path.join(BASE_LOG_DIR, today)
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
 
 
 def _write_request_log(request_id):
@@ -88,13 +102,19 @@ def _write_request_log(request_id):
     if record is None:
         return
 
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    log_dir = os.path.join(BASE_LOG_DIR, today)
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, "app.jsonl")
+    log_dir = _log_dir_for_today()
 
-    with open(log_file, "a", encoding="utf-8") as file:
+    # (1) compact JSONL, one line per completed request
+    jsonl_path = os.path.join(log_dir, "app.jsonl")
+    with open(jsonl_path, "a", encoding="utf-8") as file:
         file.write(json.dumps(record, default=str) + "\n")
+
+    # (2) pretty per-request JSON file, easy to open and read
+    requests_dir = os.path.join(log_dir, "requests")
+    os.makedirs(requests_dir, exist_ok=True)
+    pretty_path = os.path.join(requests_dir, f"{request_id}.json")
+    with open(pretty_path, "w", encoding="utf-8") as file:
+        json.dump(record, file, default=str, indent=2, ensure_ascii=False)
 
 
 def log_event(

@@ -1,0 +1,25 @@
+{
+  "request_id": "bea53068-fc44-4d37-bcbb-df421ca554e2",
+  "timestamp": "2026-08-23T10:33:10.178463",
+  "request": {
+    "endpoint": "/query",
+    "question": "gradients",
+    "status": "success",
+    "total_latency_ms": 8102.42
+  },
+  "rag": {
+    "total_latency_ms": 8101.81,
+    "retrieval_latency_ms": 75.67,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 142.9,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 7881.46,
+    "validation_attempts": 0,
+    "graceful_failure": false,
+    "prompt_tokens": 1193,
+    "completion_tokens": 294,
+    "tokens_per_second": 56.57
+  }
+}

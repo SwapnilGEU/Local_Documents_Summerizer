@@ -1,0 +1,18 @@
+{
+  "query": "what is em algorithm",
+  "request_id": "c4366180-b90c-48e9-a9d2-d0adaea5dd0f",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-08-23T05:02:45.802158+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 20
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-08-23T05:02:53.096927+00:00",
+      "status_code": 200
+    }
+  ]
+}

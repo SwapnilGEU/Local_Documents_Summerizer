@@ -1,0 +1,25 @@
+{
+  "request_id": "c4366180-b90c-48e9-a9d2-d0adaea5dd0f",
+  "timestamp": "2026-08-23T10:32:53.105259",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is em algorithm",
+    "status": "success",
+    "total_latency_ms": 7292.58
+  },
+  "rag": {
+    "total_latency_ms": 7291.99,
+    "retrieval_latency_ms": 103.59,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 196.69,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 6990.21,
+    "validation_attempts": 0,
+    "graceful_failure": false,
+    "prompt_tokens": 876,
+    "completion_tokens": 256,
+    "tokens_per_second": 57.14
+  }
+}

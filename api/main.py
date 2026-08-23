@@ -12,9 +12,9 @@ if str(APP_DIR) not in sys.path:
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
-from rag import rag
-from logging_utils import log_event
-from metrics import metrics
+from app.rag import rag
+from app.logging_utils import log_event
+from app.metrics import metrics
 
 
 app = FastAPI(title="Advanced RAG API")
@@ -44,7 +44,7 @@ def query_rag(request: QueryRequest, http_request: Request):
     )
 
     try:
-        answer, sources = rag(request.question, request_id=request_id)
+        answer, sources, run_metrics = rag(request.question, request_id=request_id)
 
         latency_ms = (time.perf_counter() - request_start) * 1000
         metrics.record_request(latency_ms, success=True)
@@ -54,6 +54,19 @@ def query_rag(request: QueryRequest, http_request: Request):
             "request_completed",
             request_id=request_id,
             status_code=200,
+        )
+
+        # Structured per-request JSON: data_logs/<date>/metrics/<id>.json
+        metrics.save_request_snapshot(
+            request_id,
+            request_section={
+                "endpoint": "/query",
+                "question": request.question,
+                "status": "success",
+                "total_latency_ms": round(latency_ms, 2),
+            },
+            rag_section=run_metrics["rag_section"],
+            llm_section=run_metrics["llm_section"],
         )
 
         return {
@@ -71,6 +84,18 @@ def query_rag(request: QueryRequest, http_request: Request):
             "request_failed",
             request_id=request_id,
             endpoint="/query",
+        )
+
+        metrics.save_request_snapshot(
+            request_id,
+            request_section={
+                "endpoint": "/query",
+                "question": request.question,
+                "status": "failed",
+                "total_latency_ms": round(latency_ms, 2),
+            },
+            rag_section={},
+            llm_section={},
         )
         raise
 
