@@ -1,0 +1,18 @@
+{
+  "query": "what is rag",
+  "request_id": "e61d2c3e-0531-4b1a-8671-1df6d0ac8aa6",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-20T07:16:31.252232+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 11
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-09-20T07:16:42.071488+00:00",
+      "status_code": 200
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "request_id": "e61d2c3e-0531-4b1a-8671-1df6d0ac8aa6",
+  "timestamp": "2026-09-20T12:46:42.076943",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is rag",
+    "status": "success",
+    "total_latency_ms": 10816.47
+  },
+  "rag": {
+    "total_latency_ms": 10815.82,
+    "retrieval_latency_ms": 884.02,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 406.31,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 9523.87,
+    "validation_attempts": 0,
+    "graceful_failure": false,
+    "prompt_tokens": 735,
+    "completion_tokens": 11,
+    "tokens_per_second": 52.76
+  }
+}
