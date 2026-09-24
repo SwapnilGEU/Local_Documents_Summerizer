@@ -272,6 +272,165 @@ def rag(query, request_id=None):
     return answer, final_docs, run_metrics
 
 
+def generate_streaming_answer(prompt_text, request_id=None, llm_stats=None):
+    """Streaming counterpart to generate_validated_answer() above.
+
+    Yields raw text pieces as the LLM produces them. Real trade-off vs.
+    generate_validated_answer(): RAGAnswer validation still runs, but only
+    AFTER the full text has already been streamed out, so on failure it
+    can only log -- it can no longer retry before anything is shown.
+
+    llm_stats is an optional dict the caller passes in; this function
+    fills it with latency/token totals as a side effect. That's needed
+    because a generator's normal `return value` isn't easy to read back
+    from a plain `for piece in generator:` loop -- an output parameter is
+    the simplest way to hand summary data back to the caller once the
+    last piece has been yielded.
+    """
+    if llm_stats is None:
+        llm_stats = {}
+
+    start = time.perf_counter()
+    full_text = ""
+    last_meta = {}
+
+    for chunk in local_llm.stream(prompt_text):
+        piece = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
+
+        if piece:
+            full_text += piece
+            yield piece
+
+        if chunk.response_metadata:
+            last_meta = chunk.response_metadata
+
+    llm_ms = (time.perf_counter() - start) * 1000
+
+    prompt_tokens = last_meta.get("prompt_eval_count", 0)
+    completion_tokens = last_meta.get("eval_count", 0)
+    eval_duration_s = last_meta.get("eval_duration", 0) / 1e9
+    tokens_per_second = (
+        completion_tokens / eval_duration_s if eval_duration_s > 0 else 0.0
+    )
+
+    metrics.record_llm(llm_ms)
+    metrics.record_tokens(prompt_tokens, completion_tokens, tokens_per_second)
+
+    llm_stats["total_llm_latency_ms"] = round(llm_ms, 2)
+    llm_stats["prompt_tokens"] = prompt_tokens
+    llm_stats["completion_tokens"] = completion_tokens
+    llm_stats["tokens_per_second"] = round(tokens_per_second, 2)
+
+    try:
+        RAGAnswer(answer=full_text)
+        llm_stats["validation_failed"] = False
+    except ValidationError as exc:
+        metrics.record_validation_failure()
+        llm_stats["validation_failed"] = True
+
+        log_event(
+            "rag_validation_error",
+            request_id=request_id,
+            error=str(exc),
+            note="logged only -- streaming mode does not retry",
+        )
+
+    log_event(
+        "llm_completed",
+        request_id=request_id,
+        latency_ms=round(llm_ms, 2),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        tokens_per_second=round(tokens_per_second, 2),
+    )
+
+
+def rag_stream(query, request_id=None):
+    """Generator version of rag(). Retrieval + reranking run up front,
+    exactly as in rag() -- they're fast and don't need to stream. Then it
+    yields {"type": "token", "text": ...} chunks as the LLM generates the
+    answer, and one final {"type": "done", "sources": [...], ...} chunk
+    carrying the metrics rag()'s callers normally get back directly, so
+    the caller knows the stream is finished.
+    """
+    request_id = request_id or "local"
+    total_start = time.perf_counter()
+
+    log_event(
+        "rag_started",
+        request_id=request_id,
+        query_length=len(query),
+    )
+
+    start = time.perf_counter()
+    hybrid_docs = hybrid_search(
+        query,
+        k=TOP_K_HYBRID,
+        fetch_k=20,
+    )
+    retrieval_ms = (time.perf_counter() - start) * 1000
+    metrics.record_retrieval(retrieval_ms)
+
+    log_event(
+        "retrieval_completed",
+        request_id=request_id,
+        latency_ms=round(retrieval_ms, 2),
+        documents_retrieved=len(hybrid_docs),
+    )
+
+    start = time.perf_counter()
+    final_docs = rerank(
+        query,
+        hybrid_docs,
+        top_k=TOP_K_FINAL,
+    )
+    rerank_ms = (time.perf_counter() - start) * 1000
+    metrics.record_reranking(rerank_ms)
+
+    log_event(
+        "reranking_completed",
+        request_id=request_id,
+        latency_ms=round(rerank_ms, 2),
+        documents_selected=len(final_docs),
+    )
+
+    context = build_context(final_docs)
+    prompt_text = build_prompt(context, query)
+
+    llm_stats = {}
+    for piece in generate_streaming_answer(
+        prompt_text, request_id=request_id, llm_stats=llm_stats
+    ):
+        yield {"type": "token", "text": piece}
+
+    total_ms = (time.perf_counter() - total_start) * 1000
+
+    log_event(
+        "rag_completed",
+        request_id=request_id,
+        total_latency_ms=round(total_ms, 2),
+    )
+
+    yield {
+        "type": "done",
+        "sources": [doc.metadata for doc in final_docs],
+        "rag_section": {
+            "total_latency_ms": round(total_ms, 2),
+            "retrieval_latency_ms": round(retrieval_ms, 2),
+            "documents_retrieved": len(hybrid_docs),
+            "reranking_latency_ms": round(rerank_ms, 2),
+            "documents_selected": len(final_docs),
+        },
+        "llm_section": {
+            "total_llm_latency_ms": llm_stats.get("total_llm_latency_ms", 0.0),
+            "prompt_tokens": llm_stats.get("prompt_tokens", 0),
+            "completion_tokens": llm_stats.get("completion_tokens", 0),
+            "tokens_per_second": llm_stats.get("tokens_per_second", 0.0),
+            "validation_failed": llm_stats.get("validation_failed", False),
+        },
+    }
+
+
 if __name__ == "__main__":
     question = "What is machine learning?"
     answer, sources, run_metrics = rag(question)

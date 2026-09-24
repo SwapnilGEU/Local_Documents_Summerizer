@@ -1,0 +1,24 @@
+{
+  "request_id": "f7080534-4334-486d-9c5a-821333954f82",
+  "timestamp": "2026-09-24T09:40:27.795245+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is supervised learning",
+    "status": "success",
+    "total_latency_ms": 6514.0
+  },
+  "rag": {
+    "total_latency_ms": 6511.44,
+    "retrieval_latency_ms": 85.32,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 304.06,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 6120.57,
+    "prompt_tokens": 810,
+    "completion_tokens": 199,
+    "tokens_per_second": 55.66,
+    "validation_failed": false
+  }
+}

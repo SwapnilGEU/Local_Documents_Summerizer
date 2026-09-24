@@ -1,3 +1,4 @@
+import json
 import sys
 import time
 from pathlib import Path
@@ -10,11 +11,12 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.logging_utils import log_event
 from app.metrics import metrics
-from app.rag import rag
+from app.rag import rag_stream
 
 app = FastAPI(title="Advanced RAG API")
 
@@ -30,6 +32,13 @@ def root():
 
 @app.post("/query")
 def query_rag(request: QueryRequest, http_request: Request):
+    """Streams the answer back as newline-delimited JSON (NDJSON): one
+    {"type": "token", "text": ...} line per chunk of the answer, then one
+    final {"type": "done", "sources": [...], "rag_section": {...},
+    "llm_section": {...}} line, or {"type": "error", ...} if the pipeline
+    fails partway through. This replaces the old single-JSON-blob
+    response -- see rag_stream() in app/rag.py for why.
+    """
     request_id = http_request.headers.get("X-Request-ID") or str(uuid4())
     request_start = time.perf_counter()
 
@@ -42,61 +51,65 @@ def query_rag(request: QueryRequest, http_request: Request):
         query_length=len(request.question),
     )
 
-    try:
-        answer, sources, run_metrics = rag(request.question, request_id=request_id)
+    def event_stream():
+        final_chunk = {}
 
-        latency_ms = (time.perf_counter() - request_start) * 1000
-        metrics.record_request(latency_ms, success=True)
-        metrics.save_snapshot()
+        try:
+            for chunk in rag_stream(request.question, request_id=request_id):
+                if chunk["type"] == "done":
+                    final_chunk = chunk
 
-        log_event(
-            "request_completed",
-            request_id=request_id,
-            status_code=200,
-        )
+                yield json.dumps(chunk) + "\n"
 
-        # Structured per-request JSON: data_logs/<date>/metrics/<id>.json
-        metrics.save_request_snapshot(
-            request_id,
-            request_section={
-                "endpoint": "/query",
-                "question": request.question,
-                "status": "success",
-                "total_latency_ms": round(latency_ms, 2),
-            },
-            rag_section=run_metrics["rag_section"],
-            llm_section=run_metrics["llm_section"],
-        )
+            latency_ms = (time.perf_counter() - request_start) * 1000
+            metrics.record_request(latency_ms, success=True)
+            metrics.save_snapshot()
 
-        return {
-            "request_id": request_id,
-            "question": request.question,
-            "answer": answer,
-            "sources": [doc.metadata for doc in sources],
-        }
-    except Exception:
-        latency_ms = (time.perf_counter() - request_start) * 1000
-        metrics.record_request(latency_ms, success=False)
-        metrics.save_snapshot()
+            log_event(
+                "request_completed",
+                request_id=request_id,
+                status_code=200,
+            )
 
-        log_event(
-            "request_failed",
-            request_id=request_id,
-            endpoint="/query",
-        )
+            # Structured per-request JSON: data_logs/<date>/metrics/<id>.json
+            metrics.save_request_snapshot(
+                request_id,
+                request_section={
+                    "endpoint": "/query",
+                    "question": request.question,
+                    "status": "success",
+                    "total_latency_ms": round(latency_ms, 2),
+                },
+                rag_section=final_chunk.get("rag_section", {}),
+                llm_section=final_chunk.get("llm_section", {}),
+            )
 
-        metrics.save_request_snapshot(
-            request_id,
-            request_section={
-                "endpoint": "/query",
-                "question": request.question,
-                "status": "failed",
-                "total_latency_ms": round(latency_ms, 2),
-            },
-            rag_section={},
-            llm_section={},
-        )
-        raise
+        except Exception:  # noqa: BLE001 - last-resort boundary around the whole stream; must still emit an error chunk and log, not crash the response mid-stream
+            latency_ms = (time.perf_counter() - request_start) * 1000
+            metrics.record_request(latency_ms, success=False)
+            metrics.save_snapshot()
+
+            log_event(
+                "request_failed",
+                request_id=request_id,
+                endpoint="/query",
+            )
+
+            metrics.save_request_snapshot(
+                request_id,
+                request_section={
+                    "endpoint": "/query",
+                    "question": request.question,
+                    "status": "failed",
+                    "total_latency_ms": round(latency_ms, 2),
+                },
+                rag_section={},
+                llm_section={},
+            )
+
+            yield json.dumps({"type": "error", "request_id": request_id}) + "\n"
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
 @app.get("/metrics")
