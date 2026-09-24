@@ -6,7 +6,10 @@ A fully local question-answering system for long PDF documents. It combines hybr
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![Ollama](https://img.shields.io/badge/Ollama-local%20LLM-black)
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-vector%20store-orange)
+![DeepEval](https://img.shields.io/badge/DeepEval-LLM%20evaluation-6E40C9)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
+
 
 ![PDFinsight interface](docs/images/ui.png)
 
