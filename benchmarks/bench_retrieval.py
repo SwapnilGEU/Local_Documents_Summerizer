@@ -123,13 +123,21 @@ def get_rankings(name, golden, use_cache=True):
     return cache["rankings"], cache["latency_ms"], cache["build_s"]
 
 
+def dedupe(ranked):
+    """Keep the first occurrence of each chunk_id. A retriever returning the same
+    chunk twice (e.g. a vector store with duplicate entries) must not be credited
+    twice - that is how nDCG once came out as 1.78."""
+    seen = set()
+    return [cid for cid in ranked if not (cid in seen or seen.add(cid))]
+
+
 def run_method(name, golden, use_cache=True):
     rankings, lat_by_q, build_s = get_rankings(name, golden, use_cache)
 
     per_q, latencies = [], []
     for row in golden:
         relevant = set(row["relevant_chunk_ids"])
-        ranked = rankings[row["question"]]
+        ranked = dedupe(rankings[row["question"]])
         latencies.append(lat_by_q[row["question"]])
 
         rec = {
