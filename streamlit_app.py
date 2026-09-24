@@ -11,7 +11,7 @@ import streamlit as st
 # PAGE CONFIGURATION
 # ==========================================
 
-st.set_page_config(page_title="Advanced RAG Assistant", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="PDFinsight", page_icon="🤖", layout="wide")
 
 
 # ==========================================
@@ -97,7 +97,7 @@ def create_chat_export(messages):
 # ==========================================
 
 with st.sidebar:
-    st.title("⚙️ RAG Assistant")
+    st.title("⚙️ Info & Action Buttons")
 
     st.write("Advanced RAG system powered by Streamlit + FastAPI.")
 
@@ -150,7 +150,7 @@ with st.sidebar:
 # MAIN TITLE
 # ==========================================
 
-st.title("🤖 Advanced RAG Assistant")
+st.title("🤖 PDFinsight")
 
 st.caption("Ask questions from your document knowledge base.")
 

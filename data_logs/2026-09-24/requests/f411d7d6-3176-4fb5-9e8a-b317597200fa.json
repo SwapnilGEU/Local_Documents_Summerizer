@@ -1,0 +1,18 @@
+{
+  "query": "hey",
+  "request_id": "f411d7d6-3176-4fb5-9e8a-b317597200fa",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-24T09:41:19.543080+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 3
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-09-24T09:41:22.364715+00:00",
+      "status_code": 200
+    }
+  ]
+}
