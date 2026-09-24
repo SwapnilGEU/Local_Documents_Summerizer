@@ -1,67 +1,53 @@
-# 🧪 evaluation/
+# Evaluation
 
-End-to-end **answer quality** checks for the PDFinsight RAG pipeline.
+End-to-end answer quality evaluation for PDFinsight using [DeepEval](https://github.com/confident-ai/deepeval). While [`benchmarks/`](../benchmarks/README.md) measures retrieval accuracy and generation speed, this folder measures whether the final answers are correct and grounded in the source document.
 
-The benchmarks in [`../benchmarks`](../benchmarks/README.md) answer *"did we retrieve the right chunk?"* and *"how fast is the model?"*.
-This folder answers the question that matters most to a user: **"Is the final answer correct and grounded in the book?"**
+## Modules
 
----
-
-## What's inside
-
-| File | What it does |
+| Module | Purpose |
 |---|---|
-| `eval_set.py` | 5 evaluation questions. Every reference answer is written **only** from `data/processed/chunks.jsonl`, with the gold chunk IDs and an exact quote. `python evaluation/eval_set.py` checks that the quotes still match the chunks. |
-| `run_deepeval.py` | Runs the full pipeline (hybrid search → rerank → LLM) for each question, scores the answers with DeepEval, and saves one JSON file per model. |
-| `test_graceful_failure.py` | Forces the LLM to return invalid output and checks that the pipeline retries, then fails gracefully instead of crashing. |
-| `results/` | One `<model>.json` per evaluated model (`:` becomes `_` in filenames, e.g. `llama3.2_3b.json`). |
+| `eval_set.py` | Five evaluation questions. Each has a reference answer written only from `data/processed/chunks.jsonl`, the relevant chunk IDs and a verbatim evidence quote. Running the file checks that the quotes still match the chunks. |
+| `run_deepeval.py` | Runs the full pipeline (hybrid search, reranking, generation) for each question, scores the answers with DeepEval and saves one JSON file per model. |
+| `test_graceful_failure.py` | Forces invalid LLM output to confirm that validation retries run and the pipeline fails gracefully. |
+| `results/` | One result file per evaluated model, e.g. `llama3.2_3b.json`. Colons in model names are replaced for Windows compatibility. |
 
----
-
-## Quick start
+## Usage
 
 ```bash
-pip install deepeval                                   # not in requirements.txt (dev-only)
+pip install deepeval                                   # development dependency
 
-python evaluation/eval_set.py                          # sanity check: questions ↔ chunks
-python evaluation/run_deepeval.py                      # default model from app/config.py
+python evaluation/eval_set.py                          # validate questions against chunks
+python evaluation/run_deepeval.py                      # model from app/config.py
 python evaluation/run_deepeval.py --model gemma3:4b    # any installed Ollama model
-python evaluation/run_deepeval.py --compare            # side-by-side table of all results
+python evaluation/run_deepeval.py --compare            # compare all saved results
 ```
 
-Before doing any work, the script checks that the eval set matches the chunks and that both the answering model and the judge are installed in Ollama.
+Before running, the script checks the evaluation set and confirms that both the generator and the judge model are installed in Ollama.
 
----
+### Generator and judge
 
-## Two models, two roles
-
-| Flag | Role | Default |
+| Option | Role | Default |
 |---|---|---|
-| `--model` | **Generator:** answers the questions (the thing you're comparing) | `LOCAL_MODEL` from `app/config.py` |
-| `--judge` | **Evaluator:** scores the answers | `qwen3:4b-instruct` |
+| `--model` | Generates the answers being evaluated | `LOCAL_MODEL` in `app/config.py` |
+| `--judge` | Scores the answers | `qwen3:4b-instruct` |
 
-💡 **Keep the judge the same across runs.** If the judge changes too, you can't tell whether a score moved because the answer improved or because the grader got stricter or looser.
-And if you evaluate the judge model itself as a generator, remember it may be a little generous to its own style of answer.
+The judge is held constant across runs so that score differences reflect the generator rather than changes in grading. Evaluating the judge model as a generator may introduce some self-preference bias.
 
----
+## Metrics
 
-## The metrics
-
-| Metric | Question it answers | Mostly depends on |
+| Metric | Measures | Primarily reflects |
 |---|---|---|
-| **Faithfulness** | Is every claim in the answer supported by the retrieved chunks? (a hallucination check) | the LLM |
-| **Answer relevancy** | Does the answer actually address the question? | the LLM |
-| **Contextual precision** | Are the relevant chunks ranked above the irrelevant ones? | retrieval + reranker |
-| **Contextual recall** | Does the retrieved context contain everything in the reference answer? | retrieval + reranker |
-| `retrieval_hit` | Did the final 4 chunks include at least one gold chunk? (no LLM needed) | retrieval + reranker |
+| Faithfulness | Whether every claim in the answer is supported by the retrieved context | Generator |
+| Answer relevancy | Whether the answer addresses the question | Generator |
+| Contextual precision | Whether relevant chunks are ranked above irrelevant ones | Retrieval |
+| Contextual recall | Whether the retrieved context covers the reference answer | Retrieval |
+| `retrieval_hit` | Whether the final four chunks include a labelled relevant chunk | Retrieval |
 
-A handy rule of thumb: if contextual precision and recall are the same for two models, both got the same chunks, so any difference in faithfulness or relevancy comes from the LLM alone.
+When two models share identical contextual precision and recall, they received the same context, so differences in faithfulness and relevancy can be attributed to the generator.
 
----
+## Evaluation Set
 
-## The eval set
-
-| # | Question | Gold chunks |
+| ID | Question | Relevant chunks |
 |---|---|---|
 | e1 | What is machine learning? | 9, 0 |
 | e2 | What is concept learning from labeled training examples? | 65, 64 |
@@ -69,11 +55,9 @@ A handy rule of thumb: if contextual precision and recall are the same for two m
 | e4 | What is reinforcement learning? | 1093, 1094, 1143 |
 | e5 | What are the main applications of machine learning? | 0, 9, 10, 11 |
 
-**Why e2 and e3 are worded that way:** the book never uses the term *"supervised learning"*, and it only mentions unsupervised learning when talking about clustering. A reference answer that isn't in the book would penalise the pipeline for correctly saying "I don't know". Every reference here can be traced back to real chunks.
+Questions e2 and e3 are phrased around the source's own terminology. The textbook does not use the term "supervised learning", and it discusses unsupervised learning only in the context of clustering. A reference answer containing content absent from the corpus would penalise the pipeline for correctly declining to answer.
 
----
-
-## What a result file contains
+## Output Format
 
 ```jsonc
 {
@@ -85,13 +69,13 @@ A handy rule of thumb: if contextual precision and recall are the same for two m
     {
       "qid": "e1",
       "user_input": "What is machine learning?",
-      "response": "...",                        // the model's answer
-      "reference": "...",                       // expected answer
+      "response": "...",
+      "reference": "...",
       "retrieved_chunk_ids": [0, 48, 41, 49],
       "relevant_chunk_ids": [9, 0],
       "retrieval_hit": true,
       "scores":  { "faithfulness": 0.86, ... },
-      "reasons": { "faithfulness": "The judge's explanation...", ... },
+      "reasons": { "faithfulness": "...", ... },
       "latency_ms": 3828.5,
       "llm": { "prompt_tokens": 950, "completion_tokens": 60, ... }
     }
@@ -99,23 +83,19 @@ A handy rule of thumb: if contextual precision and recall are the same for two m
 }
 ```
 
-The `reasons` field is the most useful part when a score looks off: it tells you *which* claim the judge considered unsupported.
+The `reasons` field contains the judge's explanation for each score and is the first place to look when a score is unexpected.
 
----
-
-## Current results
+## Results
 
 | Model | Faithfulness | Answer relevancy | Contextual precision | Contextual recall | Retrieval hit |
 |---|---|---|---|---|---|
 | **llama3.2:3b** | **0.90** | 0.93 | 0.98 | 0.89 | 5/5 |
 | gemma3:4b | 0.76 | 0.92 | 0.98 | 0.89 | 5/5 |
 
-Judge: `qwen3:4b-instruct`. With only 5 questions, a single answer moves the averages noticeably, so treat small gaps as a hint rather than a verdict.
+Judge: `qwen3:4b-instruct`. With five questions, a single answer can shift the averages noticeably, so small differences should be read as indicative rather than conclusive.
 
----
+## Maintenance
 
-## Tips
-
-- **Changed the chunks?** Run `python evaluation/eval_set.py` first. If a quote no longer matches, the chunk IDs have shifted.
-- **Adding questions:** copy a row in `EVAL_SET`, find the answer in `chunks.jsonl`, and paste an exact quote into `evidence`. The validator keeps you honest.
-- **`test_graceful_failure.py`** needs Ollama running, but it mocks the LLM output, so it's fast.
+- After re-chunking, run `python evaluation/eval_set.py`. A mismatch means the chunk IDs have shifted.
+- To add a question, add an entry to `EVAL_SET` with an exact quote from `chunks.jsonl` in `evidence`, and the validator will confirm it.
+- `test_graceful_failure.py` mocks the LLM output but still requires Ollama to be running, because the pipeline checks the model at import time.
