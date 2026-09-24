@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-syntax:
+    name: Lint & syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install lint tools
+        run: pip install ruff
+
+      - name: Ruff check
+        run: ruff check app api evaluation streamlit_app.py
+
+      - name: Compile-check every .py file
+        # Catches syntax errors without importing anything (so it doesn't
+        # trip the Ollama-connectivity check that runs at import time)
+        run: python -m compileall -q app api evaluation streamlit_app.py
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t rag-app:ci .
+
+  # ---------------------------------------------------------------------
+  # Optional, off by default: full pipeline test against a real Ollama
+  # instance. Slow (pulls a multi-GB model every run) and only makes
+  # sense once app/llm.py's import-time check is made skippable. Flip
+  # `if: false` to `if: true` (or drop the `if:` line) when you're ready.
+  # ---------------------------------------------------------------------
+  integration-test:
+    name: Full RAG pipeline (with live Ollama)
+    runs-on: ubuntu-latest
+    if: false
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Pull model into Ollama service
+        run: |
+          curl -s http://localhost:11434/api/pull -d '{"name":"qwen3:4b-instruct"}'
+
+      - name: Run graceful-failure check
+        env:
+          OLLAMA_BASE_URL: http://localhost:11434
+        run: python evaluation/test_graceful_failure.py
