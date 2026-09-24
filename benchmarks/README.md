@@ -1,8 +1,6 @@
 # benchmarks/
 
-This folder answers two separate questions:
-
-1. **Which retrieval method finds the right chunks?** Use `bench_retrieval.py`. It doesn't need an LLM.
+1. **Which retrieval method finds the right chunks?** Use `bench_retrieval.py`. 
 2. **Which local model is fast enough on my GPU?** Use `bench_llm_speed.py`.
 
 Run everything from the repo root, in the same env you use for the app.
@@ -34,7 +32,6 @@ The golden set is the exam (questions + answer key). The chunks are what gets se
 
 ### Methods
 
-| Method | What it does | Needs a model? |
 |---|---|---|
 | `bm25` | Keyword search. Uses the same regex tokenizer as `app/retrieval.py` (strips markdown like `**_entropy,_**` → `entropy`). | No |
 | `chroma` | Dense search: the query is embedded with `bge-small` and compared with the stored chunk vectors. `vectorstore.as_retriever("similarity")` is only a LangChain wrapper around this same search, so it isn't a separate method. | Embedding model (query only; chunk vectors are already in `data/chroma`) |

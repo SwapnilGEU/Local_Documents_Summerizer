@@ -82,7 +82,7 @@ def fingerprint(name):
     FETCH_K -> new fingerprint -> cache is ignored and rebuilt automatically."""
     bench = Path(__file__).resolve().parent
     h = hashlib.sha256()
-    for f in [CHUNKS_PATH, APP_DIR / "config.py", APP_DIR / "retrieval.py", APP_DIR / "reranker.py", bench / "retrievers.py"]:
+    for f in [CHUNKS_PATH, APP_DIR / "config.py", APP_DIR / "chunking.py", APP_DIR / "vectorstore.py", APP_DIR / "retrieval.py", APP_DIR / "reranker.py", bench / "retrievers.py"]:
         if f.exists():
             h.update(f.read_bytes())
     h.update(f"{name}|{FETCH_K}|{RERANK_CANDIDATES}".encode())
