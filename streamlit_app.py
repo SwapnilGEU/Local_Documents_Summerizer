@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import os
 import time
 
@@ -216,57 +217,53 @@ if question:
     # Call FastAPI
     # --------------------------------------
 
-    with (
-        st.chat_message("assistant"),
-        st.spinner("🔎 Retrieving information and generating answer..."),
-    ):
+    with st.chat_message("assistant"):
         try:
             start_time = time.time()
-            response = requests.post(API_URL, json={"question": question}, timeout=120)
+
+            with st.spinner("🔎 Retrieving relevant documents..."):
+                response = requests.post(
+                    API_URL, json={"question": question}, stream=True, timeout=120
+                )
+                response.raise_for_status()
+
+            # ==================================
+            # STREAM THE ANSWER TOKEN BY TOKEN
+            # ==================================
+            # The backend sends newline-delimited JSON: one
+            # {"type": "token", "text": ...} line per chunk of the answer,
+            # then a final {"type": "done", "sources": [...], ...} line
+            # (or {"type": "error", ...} if the pipeline failed partway
+            # through). st.write_stream renders each token live as it
+            # arrives and returns the full concatenated answer once the
+            # generator underneath it is exhausted.
+
+            final_chunk = {}
+
+            def token_generator():
+                for line in response.iter_lines(decode_unicode=True):
+                    if not line:
+                        continue
+
+                    chunk = json.loads(line)
+
+                    if chunk.get("type") == "token":
+                        yield chunk["text"]
+                    else:
+                        final_chunk.update(chunk)
+
+            answer = st.write_stream(token_generator())
+
             request_time = time.time() - start_time
             print(f"Request time: {request_time:.2f} seconds")
-            response.raise_for_status()
 
-            result = response.json()
+            if final_chunk.get("type") == "error":
+                raise RuntimeError(
+                    "RAG pipeline failed mid-stream "
+                    f"(request_id={final_chunk.get('request_id')})"
+                )
 
-            # ==================================
-            # EXTRACT ANSWER
-            # ==================================
-
-            if isinstance(result, dict):
-                if "answer" in result:
-                    answer = result["answer"]
-
-                elif "response" in result:
-                    answer = result["response"]
-
-                else:
-                    answer = str(result)
-
-            else:
-                answer = str(result)
-
-            # ==================================
-            # EXTRACT SOURCES
-            # ==================================
-
-            sources = []
-
-            if isinstance(result, dict):
-                if "sources" in result:
-                    sources = result["sources"]
-
-                elif "context" in result:
-                    sources = result["context"]
-
-                elif "documents" in result:
-                    sources = result["documents"]
-
-            # ==================================
-            # DISPLAY ANSWER
-            # ==================================
-
-            st.markdown(answer)
+            sources = final_chunk.get("sources", [])
 
             # ==================================
             # DISPLAY SOURCES
