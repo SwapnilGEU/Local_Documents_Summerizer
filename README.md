@@ -92,7 +92,3 @@ evaluation/    DeepEval answer-quality evaluation, one result file per model
 docs/images/   Screenshots
 k8s/           Kubernetes manifests
 ```
-
-## Author
-
-**Swapnil** · [GitHub](https://github.com/SwapnilGEU) · [LinkedIn](https://www.linkedin.com/in/your-profile)
