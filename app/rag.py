@@ -1,13 +1,13 @@
 import time
 
-from config import TOP_K_FINAL, TOP_K_HYBRID, MAX_VALIDATION_RETRIES
-from retrieval import hybrid_search
+from config import MAX_VALIDATION_RETRIES, TOP_K_FINAL, TOP_K_HYBRID
 from llm import local_llm
-from reranker import rerank
 from logging_utils import log_event
 from metrics import metrics
-from schemas import RAGAnswer
 from pydantic import ValidationError
+from reranker import rerank
+from retrieval import hybrid_search
+from schemas import RAGAnswer
 
 
 def build_context(docs):
@@ -87,7 +87,14 @@ def _call_llm_once(prompt_text):
         completion_tokens / eval_duration_s if eval_duration_s > 0 else 0.0
     )
 
-    return raw_text, response, llm_ms, prompt_tokens, completion_tokens, tokens_per_second
+    return (
+        raw_text,
+        response,
+        llm_ms,
+        prompt_tokens,
+        completion_tokens,
+        tokens_per_second,
+    )
 
 
 def generate_validated_answer(prompt_text, request_id=None):
@@ -229,7 +236,7 @@ def rag(query, request_id=None):
     context = build_context(final_docs)
     prompt_text = build_prompt(context, query)
 
-    answer, response, total_llm_ms, validation_attempts, llm_totals = (
+    answer, _response, total_llm_ms, validation_attempts, llm_totals = (
         generate_validated_answer(prompt_text, request_id=request_id)
     )
 

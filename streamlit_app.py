@@ -1,28 +1,23 @@
-import streamlit as st
-import requests
 import csv
 import io
-import time
 import os
+import time
+
+import requests
+import streamlit as st
+
 # ==========================================
 # PAGE CONFIGURATION
 # ==========================================
 
-st.set_page_config(
-    page_title="Advanced RAG Assistant",
-    page_icon="🤖",
-    layout="wide"
-)
+st.set_page_config(page_title="Advanced RAG Assistant", page_icon="🤖", layout="wide")
 
 
 # ==========================================
 # FASTAPI CONFIGURATION
 # ==========================================
 
-API_URL = os.getenv(
-    "API_URL",
-    "http://127.0.0.1:8000/query"
-)
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/query")
 
 # ==========================================
 # SESSION STATE
@@ -39,6 +34,7 @@ if "export_data" not in st.session_state:
 # FUNCTION: CREATE CHAT EXPORT
 # ==========================================
 
+
 def create_chat_export(messages):
 
     output = io.StringIO()
@@ -46,71 +42,49 @@ def create_chat_export(messages):
     writer = csv.writer(output)
 
     # CSV header
-    writer.writerow([
-        "Question",
-        "Retrieved Sources"
-    ])
+    writer.writerow(["Question", "Retrieved Sources"])
 
     current_question = None
 
     for message in messages:
-
         # Store user question
         if message["role"] == "user":
-
             current_question = message["content"]
 
         # Store sources associated with assistant response
         elif message["role"] == "assistant":
-
             sources = message.get("sources", [])
 
             source_text = ""
 
             if sources:
-
                 source_list = []
 
                 for source in sources:
-
                     if isinstance(source, dict):
-
                         # Try to extract useful information
                         source_info = []
 
                         if "source" in source:
-                            source_info.append(
-                                f"File: {source['source']}"
-                            )
+                            source_info.append(f"File: {source['source']}")
 
                         if "page" in source:
-                            source_info.append(
-                                f"Page: {source['page']}"
-                            )
+                            source_info.append(f"Page: {source['page']}")
 
                         if "content" in source:
-                            source_info.append(
-                                source["content"]
-                            )
+                            source_info.append(source["content"])
 
                         if source_info:
-                            source_list.append(
-                                " | ".join(source_info)
-                            )
+                            source_list.append(" | ".join(source_info))
                         else:
-                            source_list.append(
-                                str(source)
-                            )
+                            source_list.append(str(source))
 
                     else:
                         source_list.append(str(source))
 
                 source_text = "\n\n".join(source_list)
 
-            writer.writerow([
-                current_question or "",
-                source_text
-            ])
+            writer.writerow([current_question or "", source_text])
 
             current_question = None
 
@@ -122,13 +96,9 @@ def create_chat_export(messages):
 # ==========================================
 
 with st.sidebar:
-
     st.title("⚙️ RAG Assistant")
 
-    st.write(
-        "Advanced RAG system powered by "
-        "Streamlit + FastAPI."
-    )
+    st.write("Advanced RAG system powered by Streamlit + FastAPI.")
 
     st.divider()
 
@@ -136,19 +106,10 @@ with st.sidebar:
     # CLEAR CHAT
     # --------------------------------------
 
-    if st.button(
-        "🧹 Clear Chat",
-        use_container_width=True
-    ):
-
+    if st.button("🧹 Clear Chat", use_container_width=True):
         # Create export BEFORE clearing messages
         if st.session_state.messages:
-
-            st.session_state.export_data = (
-                create_chat_export(
-                    st.session_state.messages
-                )
-            )
+            st.session_state.export_data = create_chat_export(st.session_state.messages)
 
         # Clear chat
         st.session_state.messages = []
@@ -162,7 +123,6 @@ with st.sidebar:
     # --------------------------------------
 
     if st.session_state.export_data:
-
         st.subheader("📥 Chat Export")
 
         st.download_button(
@@ -170,14 +130,10 @@ with st.sidebar:
             data=st.session_state.export_data,
             file_name="rag_chat_export.csv",
             mime="text/csv",
-            use_container_width=True
+            use_container_width=True,
         )
 
-        if st.button(
-            "✖ Remove Export",
-            use_container_width=True
-        ):
-
+        if st.button("✖ Remove Export", use_container_width=True):
             st.session_state.export_data = None
 
             st.rerun()
@@ -195,9 +151,7 @@ with st.sidebar:
 
 st.title("🤖 Advanced RAG Assistant")
 
-st.caption(
-    "Ask questions from your document knowledge base."
-)
+st.caption("Ask questions from your document knowledge base.")
 
 
 # ==========================================
@@ -205,61 +159,32 @@ st.caption(
 # ==========================================
 
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
-
         st.markdown(message["content"])
 
         # ----------------------------------
         # Display sources
         # ----------------------------------
 
-        if (
-            message["role"] == "assistant"
-            and message.get("sources")
-        ):
-
-            with st.expander(
-                "📚 Retrieved Sources"
-            ):
-
-                for i, source in enumerate(
-                    message["sources"],
-                    start=1
-                ):
-
-                    st.markdown(
-                        f"**Source {i}**"
-                    )
+        if message["role"] == "assistant" and message.get("sources"):
+            with st.expander("📚 Retrieved Sources"):
+                for i, source in enumerate(message["sources"], start=1):
+                    st.markdown(f"**Source {i}**")
 
                     if isinstance(source, dict):
-
                         if "source" in source:
-
-                            st.write(
-                                f"**File:** "
-                                f"{source['source']}"
-                            )
+                            st.write(f"**File:** {source['source']}")
 
                         if "page" in source:
-
-                            st.write(
-                                f"**Page:** "
-                                f"{source['page']}"
-                            )
+                            st.write(f"**Page:** {source['page']}")
 
                         if "content" in source:
-
-                            st.write(
-                                source["content"]
-                            )
+                            st.write(source["content"])
 
                         else:
-
                             st.json(source)
 
                     else:
-
                         st.write(source)
 
                     st.divider()
@@ -269,9 +194,7 @@ for message in st.session_state.messages:
 # CHAT INPUT
 # ==========================================
 
-question = st.chat_input(
-    "Ask a question about your documents..."
-)
+question = st.chat_input("Ask a question about your documents...")
 
 
 # ==========================================
@@ -279,233 +202,151 @@ question = st.chat_input(
 # ==========================================
 
 if question:
-
     # --------------------------------------
     # Display user message
     # --------------------------------------
 
     with st.chat_message("user"):
-
         st.markdown(question)
 
     # Save user message
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": question
-        }
-    )
+    st.session_state.messages.append({"role": "user", "content": question})
 
     # --------------------------------------
     # Call FastAPI
     # --------------------------------------
 
-    with st.chat_message("assistant"):
+    with (
+        st.chat_message("assistant"),
+        st.spinner("🔎 Retrieving information and generating answer..."),
+    ):
+        try:
+            start_time = time.time()
+            response = requests.post(API_URL, json={"question": question}, timeout=120)
+            request_time = time.time() - start_time
+            print(f"Request time: {request_time:.2f} seconds")
+            response.raise_for_status()
 
-        with st.spinner(
-            "🔎 Retrieving information and generating answer..."
-        ):
+            result = response.json()
 
-            try:
+            # ==================================
+            # EXTRACT ANSWER
+            # ==================================
 
-                start_time = time.time()
-                response = requests.post(
-                    API_URL,
-                    json={
-                        "question": question
-                    },
-                    timeout=120
-                )
-                request_time = time.time() - start_time
-                print(f"Request time: {request_time:.2f} seconds")
-                response.raise_for_status()
+            if isinstance(result, dict):
+                if "answer" in result:
+                    answer = result["answer"]
 
-                result = response.json()
-
-                # ==================================
-                # EXTRACT ANSWER
-                # ==================================
-
-                if isinstance(result, dict):
-
-                    if "answer" in result:
-
-                        answer = result["answer"]
-
-                    elif "response" in result:
-
-                        answer = result["response"]
-
-                    else:
-
-                        answer = str(result)
+                elif "response" in result:
+                    answer = result["response"]
 
                 else:
-
                     answer = str(result)
 
-                # ==================================
-                # EXTRACT SOURCES
-                # ==================================
+            else:
+                answer = str(result)
 
-                sources = []
+            # ==================================
+            # EXTRACT SOURCES
+            # ==================================
 
-                if isinstance(result, dict):
+            sources = []
 
-                    if "sources" in result:
+            if isinstance(result, dict):
+                if "sources" in result:
+                    sources = result["sources"]
 
-                        sources = result["sources"]
+                elif "context" in result:
+                    sources = result["context"]
 
-                    elif "context" in result:
+                elif "documents" in result:
+                    sources = result["documents"]
 
-                        sources = result["context"]
+            # ==================================
+            # DISPLAY ANSWER
+            # ==================================
 
-                    elif "documents" in result:
+            st.markdown(answer)
 
-                        sources = result["documents"]
+            # ==================================
+            # DISPLAY SOURCES
+            # ==================================
 
-                # ==================================
-                # DISPLAY ANSWER
-                # ==================================
+            if sources:
+                with st.expander("📚 Retrieved Sources"):
+                    for i, source in enumerate(sources, start=1):
+                        st.markdown(f"### Source {i}")
 
-                st.markdown(answer)
+                        if isinstance(source, dict):
+                            if "source" in source:
+                                st.write(f"**File:** {source['source']}")
 
-                # ==================================
-                # DISPLAY SOURCES
-                # ==================================
+                            if "page" in source:
+                                st.write(f"**Page:** {source['page']}")
 
-                if sources:
-
-                    with st.expander(
-                        "📚 Retrieved Sources"
-                    ):
-
-                        for i, source in enumerate(
-                            sources,
-                            start=1
-                        ):
-
-                            st.markdown(
-                                f"### Source {i}"
-                            )
-
-                            if isinstance(
-                                source,
-                                dict
-                            ):
-
-                                if "source" in source:
-
-                                    st.write(
-                                        f"**File:** "
-                                        f"{source['source']}"
-                                    )
-
-                                if "page" in source:
-
-                                    st.write(
-                                        f"**Page:** "
-                                        f"{source['page']}"
-                                    )
-
-                                if "content" in source:
-
-                                    st.write(
-                                        source["content"]
-                                    )
-
-                                else:
-
-                                    st.json(source)
+                            if "content" in source:
+                                st.write(source["content"])
 
                             else:
+                                st.json(source)
 
-                                st.write(source)
+                        else:
+                            st.write(source)
 
-                            st.divider()
-
-                # ==================================
-                # SAVE ASSISTANT MESSAGE
-                # ==================================
-
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": answer,
-                        "sources": sources
-                    }
-                )
+                        st.divider()
 
             # ==================================
-            # ERROR HANDLING
+            # SAVE ASSISTANT MESSAGE
             # ==================================
 
-            except requests.exceptions.ConnectionError:
+            st.session_state.messages.append(
+                {"role": "assistant", "content": answer, "sources": sources}
+            )
 
-                error_message = (
-                    "❌ Could not connect to FastAPI. "
-                    "Make sure the FastAPI server is running."
-                )
+        # ==================================
+        # ERROR HANDLING
+        # ==================================
 
-                st.error(error_message)
+        except requests.exceptions.ConnectionError:
+            error_message = (
+                "❌ Could not connect to FastAPI. "
+                "Make sure the FastAPI server is running."
+            )
 
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": error_message,
-                        "sources": []
-                    }
-                )
+            st.error(error_message)
 
-            except requests.exceptions.Timeout:
+            st.session_state.messages.append(
+                {"role": "assistant", "content": error_message, "sources": []}
+            )
 
-                error_message = (
-                    "⏱️ The request timed out."
-                )
+        except requests.exceptions.Timeout:
+            error_message = "⏱️ The request timed out."
 
-                st.error(error_message)
+            st.error(error_message)
 
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": error_message,
-                        "sources": []
-                    }
-                )
+            st.session_state.messages.append(
+                {"role": "assistant", "content": error_message, "sources": []}
+            )
 
-            except requests.exceptions.HTTPError as e:
+        except requests.exceptions.HTTPError as e:
+            error_message = f"❌ FastAPI HTTP error: {e}"
 
-                error_message = (
-                    f"❌ FastAPI HTTP error: {e}"
-                )
+            st.error(error_message)
 
-                st.error(error_message)
+            try:
+                st.json(response.json())
+            except ValueError:
+                st.write(response.text)
 
-                try:
-                    st.json(response.json())
-                except Exception:
-                    st.write(response.text)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": error_message, "sources": []}
+            )
 
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": error_message,
-                        "sources": []
-                    }
-                )
+        except Exception as e:  # noqa: BLE001 - final UI-level fallback after specific requests exceptions above
+            error_message = f"❌ Unexpected error: {e}"
 
-            except Exception as e:
+            st.error(error_message)
 
-                error_message = (
-                    f"❌ Unexpected error: {e}"
-                )
-
-                st.error(error_message)
-
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": error_message,
-                        "sources": []
-                    }
-                )
+            st.session_state.messages.append(
+                {"role": "assistant", "content": error_message, "sources": []}
+            )

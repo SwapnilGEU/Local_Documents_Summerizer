@@ -8,6 +8,7 @@ if str(APP_DIR) not in sys.path:
 
 from unittest.mock import patch
 
+
 class FakeResponse:
     def __init__(self, content):
         self.content = content
@@ -16,6 +17,7 @@ class FakeResponse:
             "eval_count": 5,
             "eval_duration": 1_000_000_000,
         }
+
 
 from app.rag import rag
 

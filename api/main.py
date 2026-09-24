@@ -12,10 +12,9 @@ if str(APP_DIR) not in sys.path:
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
-from app.rag import rag
 from app.logging_utils import log_event
 from app.metrics import metrics
-
+from app.rag import rag
 
 app = FastAPI(title="Advanced RAG API")
 

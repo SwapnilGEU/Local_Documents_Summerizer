@@ -5,65 +5,43 @@ import sys
 import threading
 from datetime import datetime, timezone
 
-
 BASE_LOG_DIR = "data_logs"
 
 
 class JsonFormatter(logging.Formatter):
-
     def format(self, record):
 
         payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "event": getattr(
-                record,
-                "event",
-                record.getMessage()
-            ),
+            "event": getattr(record, "event", record.getMessage()),
         }
 
-        fields = getattr(
-            record,
-            "fields",
-            None
-        )
+        fields = getattr(record, "fields", None)
 
         if fields:
             payload.update(fields)
 
         if record.exc_info:
-            payload["exception"] = self.formatException(
-                record.exc_info
-            )
+            payload["exception"] = self.formatException(record.exc_info)
 
-        return json.dumps(
-            payload,
-            default=str
-        )
+        return json.dumps(payload, default=str)
 
 
 logger = logging.getLogger("rag")
 logger.setLevel(logging.INFO)
 
 if not logger.handlers:
-
     # -----------------------------
     # Console logging (still one line per event, for live tailing)
     # -----------------------------
 
-    console_handler = logging.StreamHandler(
-        sys.stdout
-    )
+    console_handler = logging.StreamHandler(sys.stdout)
 
-    console_handler.setFormatter(
-        JsonFormatter()
-    )
+    console_handler.setFormatter(JsonFormatter())
 
-    logger.addHandler(
-        console_handler
-    )
+    logger.addHandler(console_handler)
 
     logger.propagate = False
 
@@ -117,18 +95,9 @@ def _write_request_log(request_id):
         json.dump(record, file, default=str, indent=2, ensure_ascii=False)
 
 
-def log_event(
-    event: str,
-    **fields
-):
+def log_event(event: str, **fields):
 
-    logger.info(
-        event,
-        extra={
-            "event": event,
-            "fields": fields
-        }
-    )
+    logger.info(event, extra={"event": event, "fields": fields})
 
     request_id = fields.get("request_id")
 

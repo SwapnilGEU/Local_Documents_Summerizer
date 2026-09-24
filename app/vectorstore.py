@@ -1,8 +1,9 @@
 from pathlib import Path
+
 from chunking import chunks, embeddings
 from config import CHROMA_PATH
-from langchain_core.documents import Document
 from langchain_chroma import Chroma
+from langchain_core.documents import Document
 
 documents = [
     Document(

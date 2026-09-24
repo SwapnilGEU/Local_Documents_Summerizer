@@ -1,9 +1,6 @@
-
-from pathlib import Path
 import re
-from config import MD_PATH
-from config import RAW_PDF
-from config import CLEAN_PATH
+
+from config import CLEAN_PATH, MD_PATH, RAW_PDF
 
 if MD_PATH.exists():
     print(f"Already extracted: {MD_PATH}")
@@ -17,11 +14,7 @@ else:
 
     all_pages = []
     for page_num in tqdm(range(len(doc)), desc="Extracting PDF", unit="page"):
-        page_data = pymupdf4llm.to_markdown(
-            doc,
-            pages=[page_num],
-            page_chunks=True
-        )
+        page_data = pymupdf4llm.to_markdown(doc, pages=[page_num], page_chunks=True)
         all_pages.extend(page_data)
 
     doc.close()
@@ -52,8 +45,10 @@ text = CLEAN_PATH.read_text(encoding="utf-8")
 HEADING_RE = re.compile(r"(?m)^(#{1,6})\s+(.+?)\s*$")
 PAGE_RE = re.compile(r"<!-- PAGE (\d+) -->")
 
+
 def strip_md_emphasis(s: str) -> str:
     return re.sub(r"[*_]+", "", s).strip()
+
 
 def is_real_heading(raw_title: str) -> bool:
     title = strip_md_emphasis(raw_title)
@@ -65,10 +60,8 @@ def is_real_heading(raw_title: str) -> bool:
         return True
 
     letters_only = re.sub(r"[^A-Za-z]", "", title)
-    if len(letters_only) >= 4 and letters_only.isupper():
-        return True
+    return len(letters_only) >= 4 and letters_only.isupper()
 
-    return False
 
 structure = []
 current_page = None
@@ -85,13 +78,16 @@ for line in text.splitlines():
         raw_title = heading_match.group(2)
 
         if is_real_heading(raw_title):
-            structure.append({
-                "page": current_page,
-                "level": level,
-                "title": strip_md_emphasis(raw_title),
-            })
+            structure.append(
+                {
+                    "page": current_page,
+                    "level": level,
+                    "title": strip_md_emphasis(raw_title),
+                }
+            )
 
 print(f"Real headings kept: {len(structure)}")
+
 
 def find_heading_positions(text, structure):
     positions = []
@@ -99,8 +95,7 @@ def find_heading_positions(text, structure):
 
     for item in structure:
         pattern = re.compile(
-            r"(?m)^#{1,6}\s+\*{0,3}_{0,3}" +
-            re.escape(item["title"][:40])
+            r"(?m)^#{1,6}\s+\*{0,3}_{0,3}" + re.escape(item["title"][:40])
         )
         match = pattern.search(text, search_from)
 
@@ -113,6 +108,7 @@ def find_heading_positions(text, structure):
             search_from = match.end()
 
     return positions
+
 
 def heading_path(idx):
     level = structure[idx]["level"]
@@ -128,6 +124,7 @@ def heading_path(idx):
 
     return " > ".join(path)
 
+
 positions = find_heading_positions(text, structure)
 
 sections = []
@@ -141,11 +138,13 @@ for i, item in enumerate(structure):
     body = PAGE_RE.sub("", body).strip()
 
     if body:
-        sections.append({
-            "title": item["title"],
-            "heading_path": heading_path(i),
-            "page": item["page"],
-            "text": body,
-        })
+        sections.append(
+            {
+                "title": item["title"],
+                "heading_path": heading_path(i),
+                "page": item["page"],
+                "text": body,
+            }
+        )
 
 print(f"Sections with body text: {len(sections)}")

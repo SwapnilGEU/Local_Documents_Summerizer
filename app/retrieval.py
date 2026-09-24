@@ -1,5 +1,5 @@
 from config import TOP_K_HYBRID
-from vectorstore import vectorstore, documents
+from vectorstore import documents, vectorstore
 
 retriever = vectorstore.as_retriever(
     search_type="similarity",
@@ -8,14 +8,12 @@ retriever = vectorstore.as_retriever(
 
 from rank_bm25 import BM25Okapi
 
-tokenized_docs = [
-    doc.page_content.lower().split()
-    for doc in documents
-]
+tokenized_docs = [doc.page_content.lower().split() for doc in documents]
 
 bm25 = BM25Okapi(tokenized_docs)
 
 print("BM25 index created.")
+
 
 def hybrid_search(query, k=TOP_K_HYBRID, fetch_k=20):
     dense_docs = retriever.invoke(query)[:fetch_k]
@@ -34,16 +32,9 @@ def hybrid_search(query, k=TOP_K_HYBRID, fetch_k=20):
         doc_id = documents[idx].metadata["chunk_id"]
         rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + 1 / (60 + rank + 1)
 
-    ranked_ids = sorted(
-        rrf_scores,
-        key=rrf_scores.get,
-        reverse=True
-    )[:k]
+    ranked_ids = sorted(rrf_scores, key=rrf_scores.get, reverse=True)[:k]
 
-    doc_lookup = {
-        doc.metadata["chunk_id"]: doc
-        for doc in documents
-    }
+    doc_lookup = {doc.metadata["chunk_id"]: doc for doc in documents}
 
     return [doc_lookup[doc_id] for doc_id in ranked_ids]
 

@@ -1,10 +1,10 @@
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+import json
+
+import torch
+from config import CHUNKS_PATH, EMBEDDING_MODEL
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
-from config import EMBEDDING_MODEL
-from config import CHUNKS_PATH
-import torch
-import json
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 embedding_device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Embedding device:", embedding_device)
@@ -66,8 +66,7 @@ def _build_chunks():
             merged_sections.append({**sections[-1], "text": carry})
 
     print(
-        f"Sections before merge: {len(sections)} -> "
-        f"after merge: {len(merged_sections)}"
+        f"Sections before merge: {len(sections)} -> after merge: {len(merged_sections)}"
     )
 
     def chunk_section_text(section_text):
@@ -93,17 +92,18 @@ def _build_chunks():
             if not piece:
                 continue
 
-            built.append({
-                "chunk_id": len(built),
-                "heading_path": sec["heading_path"],
-                "page": sec["page"],
-                "text": piece,
-                "n_chars": len(piece),
-            })
+            built.append(
+                {
+                    "chunk_id": len(built),
+                    "heading_path": sec["heading_path"],
+                    "page": sec["page"],
+                    "text": piece,
+                    "n_chars": len(piece),
+                }
+            )
 
     with open(CHUNKS_PATH, "w", encoding="utf-8") as f:
-        for chunk in built:
-            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+        f.writelines(json.dumps(chunk, ensure_ascii=False) + "\n" for chunk in built)
 
     print(f"Saved {len(built):,} chunks to {CHUNKS_PATH}")
 

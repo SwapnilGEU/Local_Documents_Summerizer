@@ -1,9 +1,11 @@
 import httpx
-from langchain_ollama import ChatOllama
 from config import LOCAL_MODEL, OLLAMA_BASE_URL
+from langchain_ollama import ChatOllama
 
 
-def check_ollama_connection(base_url: str = OLLAMA_BASE_URL, timeout: float = 2.0) -> bool:
+def check_ollama_connection(
+    base_url: str = OLLAMA_BASE_URL, timeout: float = 2.0
+) -> bool:
     """Cheap reachability check against the Ollama server (no model call)."""
     try:
         httpx.get(base_url, timeout=timeout)
@@ -35,9 +37,7 @@ print("Ollama server is reachable.")
 # Only fire a real (slower) test generation when llm.py is run directly,
 # not on every import from rag.py / other modules.
 if __name__ == "__main__":
-    test_response = local_llm.invoke(
-        "Explain machine learning in one sentence."
-    )
+    test_response = local_llm.invoke("Explain machine learning in one sentence.")
 
     print("CONTENT:")
     print(test_response.content)

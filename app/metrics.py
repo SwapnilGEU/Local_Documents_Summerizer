@@ -1,5 +1,6 @@
 import threading
 from statistics import mean
+
 from metrics_logger import save_metrics, save_request_metrics
 
 
@@ -75,20 +76,36 @@ class MetricsCollector:
             return {
                 "requests": total,
                 "errors": self.error_count,
-                "error_rate_percent": (self.error_count / total) * 100 if total else 0.0,
+                "error_rate_percent": (self.error_count / total) * 100
+                if total
+                else 0.0,
                 "total_latency_ms": {
-                    "average": mean(self.total_latencies) if self.total_latencies else 0.0,
+                    "average": mean(self.total_latencies)
+                    if self.total_latencies
+                    else 0.0,
                     "p50": self.percentile(self.total_latencies, 0.50),
                     "p95": self.percentile(self.total_latencies, 0.95),
                 },
-                "retrieval_latency_ms": {"average": mean(self.retrieval_latencies) if self.retrieval_latencies else 0.0},
-                "reranking_latency_ms": {"average": mean(self.reranking_latencies) if self.reranking_latencies else 0.0},
-                "llm_latency_ms": {"average": mean(self.llm_latencies) if self.llm_latencies else 0.0},
+                "retrieval_latency_ms": {
+                    "average": mean(self.retrieval_latencies)
+                    if self.retrieval_latencies
+                    else 0.0
+                },
+                "reranking_latency_ms": {
+                    "average": mean(self.reranking_latencies)
+                    if self.reranking_latencies
+                    else 0.0
+                },
+                "llm_latency_ms": {
+                    "average": mean(self.llm_latencies) if self.llm_latencies else 0.0
+                },
                 "llm_tokens": {
                     "prompt_tokens": self.prompt_tokens,
                     "completion_tokens": self.completion_tokens,
                     "total_tokens": self.total_tokens,
-                    "average_tokens_per_second": mean(self.tokens_per_second) if self.tokens_per_second else 0.0,
+                    "average_tokens_per_second": mean(self.tokens_per_second)
+                    if self.tokens_per_second
+                    else 0.0,
                 },
                 "llm_validation": {
                     "validation_failures": self.validation_failures,
@@ -101,7 +118,9 @@ class MetricsCollector:
         """Append the rolling cumulative aggregate (all requests so far)."""
         save_metrics(self.summary())
 
-    def save_request_snapshot(self, request_id, request_section, rag_section, llm_section):
+    def save_request_snapshot(
+        self, request_id, request_section, rag_section, llm_section
+    ):
         """Save ONE pretty structured JSON file for a single request, with
         clearly separated REQUEST / RAG / LLM sections. This is what you
         want when you want to look at "what happened on this one call"

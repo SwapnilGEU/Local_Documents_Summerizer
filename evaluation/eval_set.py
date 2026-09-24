@@ -63,16 +63,18 @@ def build_eval_rows(eval_set=EVAL_SET, verbose=True):
 
         try:
             answer, sources = rag(item["question"])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - one failed question must not stop the eval run
             print(f"  Skipped (RAG call failed: {e})")
             continue
 
-        rows.append({
-            "user_input": item["question"],
-            "response": answer,
-            "retrieved_contexts": [doc.page_content for doc in sources],
-            "reference": item["reference"],
-        })
+        rows.append(
+            {
+                "user_input": item["question"],
+                "response": answer,
+                "retrieved_contexts": [doc.page_content for doc in sources],
+                "reference": item["reference"],
+            }
+        )
 
     if verbose:
         print(f"Evaluation samples: {len(rows)}")

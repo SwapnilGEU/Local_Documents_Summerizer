@@ -6,18 +6,18 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 import pandas as pd
-from deepeval.models import OllamaModel
-from deepeval.test_case import LLMTestCase
 from deepeval.metrics import (
-    FaithfulnessMetric,
     AnswerRelevancyMetric,
     ContextualPrecisionMetric,
     ContextualRecallMetric,
+    FaithfulnessMetric,
 )
+from deepeval.models import OllamaModel
+from deepeval.test_case import LLMTestCase
+from eval_set import build_eval_rows
 
 from app.config import LOCAL_MODEL, OLLAMA_BASE_URL
 from app.llm import check_ollama_connection
-from eval_set import build_eval_rows
 
 RESULTS_PATH = Path(__file__).resolve().parent / "eval_results.csv"
 
@@ -25,16 +25,24 @@ RESULTS_PATH = Path(__file__).resolve().parent / "eval_results.csv"
 def build_metrics(evaluator_model):
     return {
         "faithfulness": FaithfulnessMetric(
-            model=evaluator_model, threshold=0.5, include_reason=True,
+            model=evaluator_model,
+            threshold=0.5,
+            include_reason=True,
         ),
         "answer_relevancy": AnswerRelevancyMetric(
-            model=evaluator_model, threshold=0.5, include_reason=True,
+            model=evaluator_model,
+            threshold=0.5,
+            include_reason=True,
         ),
         "contextual_precision": ContextualPrecisionMetric(
-            model=evaluator_model, threshold=0.5, include_reason=True,
+            model=evaluator_model,
+            threshold=0.5,
+            include_reason=True,
         ),
         "contextual_recall": ContextualRecallMetric(
-            model=evaluator_model, threshold=0.5, include_reason=True,
+            model=evaluator_model,
+            threshold=0.5,
+            include_reason=True,
         ),
     }
 
@@ -72,7 +80,7 @@ def run_evaluation(eval_rows):
             try:
                 metric.measure(test_case)
                 row_result[name] = float(metric.score)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - one metric failure must not stop the batch
                 print(f"  {name} failed: {e}")
                 row_result[name] = None
 
