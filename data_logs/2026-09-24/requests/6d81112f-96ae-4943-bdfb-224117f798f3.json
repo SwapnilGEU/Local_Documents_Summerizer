@@ -1,0 +1,48 @@
+{
+  "query": "what are neural network representation",
+  "request_id": "6d81112f-96ae-4943-bdfb-224117f798f3",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-24T15:15:43.235690+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 38
+    },
+    {
+      "event": "rag_started",
+      "timestamp": "2026-09-24T15:15:43.236693+00:00",
+      "query_length": 38
+    },
+    {
+      "event": "retrieval_completed",
+      "timestamp": "2026-09-24T15:15:43.365955+00:00",
+      "latency_ms": 128.95,
+      "documents_retrieved": 8
+    },
+    {
+      "event": "reranking_completed",
+      "timestamp": "2026-09-24T15:15:43.420735+00:00",
+      "latency_ms": 54.39,
+      "documents_selected": 4
+    },
+    {
+      "event": "llm_completed",
+      "timestamp": "2026-09-24T15:15:51.777694+00:00",
+      "latency_ms": 8355.67,
+      "prompt_tokens": 1249,
+      "completion_tokens": 320,
+      "tokens_per_second": 54.65
+    },
+    {
+      "event": "rag_completed",
+      "timestamp": "2026-09-24T15:15:51.777694+00:00",
+      "total_latency_ms": 8540.41
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-09-24T15:15:51.780415+00:00",
+      "status_code": 200
+    }
+  ]
+}

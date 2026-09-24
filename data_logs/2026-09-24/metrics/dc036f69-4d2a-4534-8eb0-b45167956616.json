@@ -1,0 +1,12 @@
+{
+  "request_id": "dc036f69-4d2a-4534-8eb0-b45167956616",
+  "timestamp": "2026-09-24T15:32:31.685302+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is supervised learning",
+    "status": "failed",
+    "total_latency_ms": 2326.68
+  },
+  "rag": {},
+  "llm": {}
+}

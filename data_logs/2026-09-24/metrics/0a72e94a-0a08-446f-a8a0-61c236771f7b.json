@@ -1,0 +1,12 @@
+{
+  "request_id": "0a72e94a-0a08-446f-a8a0-61c236771f7b",
+  "timestamp": "2026-09-24T15:33:07.964195+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "hye",
+    "status": "failed",
+    "total_latency_ms": 2115.44
+  },
+  "rag": {},
+  "llm": {}
+}

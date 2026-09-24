@@ -1,0 +1,24 @@
+{
+  "request_id": "0d040ace-86e9-4351-9bcc-35c31f94f075",
+  "timestamp": "2026-09-24T15:16:17.103375+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "great",
+    "status": "success",
+    "total_latency_ms": 4488.84
+  },
+  "rag": {
+    "total_latency_ms": 4486.29,
+    "retrieval_latency_ms": 246.36,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 47.5,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 4191.12,
+    "prompt_tokens": 955,
+    "completion_tokens": 86,
+    "tokens_per_second": 54.2,
+    "validation_failed": false
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "query": "hye",
+  "request_id": "0a72e94a-0a08-446f-a8a0-61c236771f7b",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-24T15:33:05.843890+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 3
+    },
+    {
+      "event": "rag_started",
+      "timestamp": "2026-09-24T15:33:05.845556+00:00",
+      "query_length": 3
+    },
+    {
+      "event": "retrieval_completed",
+      "timestamp": "2026-09-24T15:33:05.881542+00:00",
+      "latency_ms": 36.59,
+      "documents_retrieved": 8
+    },
+    {
+      "event": "reranking_completed",
+      "timestamp": "2026-09-24T15:33:05.922295+00:00",
+      "latency_ms": 40.74,
+      "documents_selected": 4
+    },
+    {
+      "event": "request_failed",
+      "timestamp": "2026-09-24T15:33:07.960273+00:00",
+      "endpoint": "/query"
+    }
+  ]
+}

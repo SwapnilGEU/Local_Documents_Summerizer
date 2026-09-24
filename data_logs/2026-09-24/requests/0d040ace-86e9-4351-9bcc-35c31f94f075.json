@@ -1,0 +1,48 @@
+{
+  "query": "great",
+  "request_id": "0d040ace-86e9-4351-9bcc-35c31f94f075",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-24T15:16:12.609108+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 5
+    },
+    {
+      "event": "rag_started",
+      "timestamp": "2026-09-24T15:16:12.611222+00:00",
+      "query_length": 5
+    },
+    {
+      "event": "retrieval_completed",
+      "timestamp": "2026-09-24T15:16:12.857682+00:00",
+      "latency_ms": 246.36,
+      "documents_retrieved": 8
+    },
+    {
+      "event": "reranking_completed",
+      "timestamp": "2026-09-24T15:16:12.905552+00:00",
+      "latency_ms": 47.5,
+      "documents_selected": 4
+    },
+    {
+      "event": "llm_completed",
+      "timestamp": "2026-09-24T15:16:17.096891+00:00",
+      "latency_ms": 4191.12,
+      "prompt_tokens": 955,
+      "completion_tokens": 86,
+      "tokens_per_second": 54.2
+    },
+    {
+      "event": "rag_completed",
+      "timestamp": "2026-09-24T15:16:17.097434+00:00",
+      "total_latency_ms": 4486.29
+    },
+    {
+      "event": "request_completed",
+      "timestamp": "2026-09-24T15:16:17.100144+00:00",
+      "status_code": 200
+    }
+  ]
+}

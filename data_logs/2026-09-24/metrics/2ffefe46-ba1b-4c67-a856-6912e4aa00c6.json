@@ -1,0 +1,24 @@
+{
+  "request_id": "2ffefe46-ba1b-4c67-a856-6912e4aa00c6",
+  "timestamp": "2026-09-24T15:44:30.118446+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is neural network representation",
+    "status": "success",
+    "total_latency_ms": 12832.45
+  },
+  "rag": {
+    "total_latency_ms": 12829.8,
+    "retrieval_latency_ms": 599.51,
+    "documents_retrieved": 8,
+    "reranking_latency_ms": 338.27,
+    "documents_selected": 4
+  },
+  "llm": {
+    "total_llm_latency_ms": 11890.6,
+    "prompt_tokens": 980,
+    "completion_tokens": 261,
+    "tokens_per_second": 69.98,
+    "validation_failed": false
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "query": "what is supervised learning",
+  "request_id": "dc036f69-4d2a-4534-8eb0-b45167956616",
+  "events": [
+    {
+      "event": "request_started",
+      "timestamp": "2026-09-24T15:32:29.352880+00:00",
+      "endpoint": "/query",
+      "method": "POST",
+      "query_length": 27
+    },
+    {
+      "event": "rag_started",
+      "timestamp": "2026-09-24T15:32:29.354085+00:00",
+      "query_length": 27
+    },
+    {
+      "event": "retrieval_completed",
+      "timestamp": "2026-09-24T15:32:29.411024+00:00",
+      "latency_ms": 56.05,
+      "documents_retrieved": 8
+    },
+    {
+      "event": "reranking_completed",
+      "timestamp": "2026-09-24T15:32:29.620698+00:00",
+      "latency_ms": 209.3,
+      "documents_selected": 4
+    },
+    {
+      "event": "request_failed",
+      "timestamp": "2026-09-24T15:32:31.680668+00:00",
+      "endpoint": "/query"
+    }
+  ]
+}

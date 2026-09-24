@@ -1,0 +1,12 @@
+{
+  "request_id": "f9a2d02f-9bb2-4460-a880-2a7ee645e32c",
+  "timestamp": "2026-09-24T15:32:07.830379+00:00",
+  "request": {
+    "endpoint": "/query",
+    "question": "what is neural network  representation",
+    "status": "failed",
+    "total_latency_ms": 3022.47
+  },
+  "rag": {},
+  "llm": {}
+}
