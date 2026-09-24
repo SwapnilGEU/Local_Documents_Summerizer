@@ -12,7 +12,8 @@ EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # Ollama model used for both generation and DeepEval judging.
-LOCAL_MODEL = "qwen3:4b-instruct"
+# Override without editing code: set LOCAL_MODEL=gemma3:4b (evaluation/run_deepeval.py --model does this).
+LOCAL_MODEL = os.getenv("LOCAL_MODEL", "qwen3:4b-instruct")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 TOP_K_HYBRID = 8
